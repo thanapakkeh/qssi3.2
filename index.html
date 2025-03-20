@@ -1,0 +1,155 @@
+
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ตรวจสอบผู้ตรวจ</title>
+  <link href="https://fonts.googleapis.com/css2?family=Kanit&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Kanit', sans-serif;
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(to bottom, #e8f5e9, #ffffff);
+      color: #333;
+    }
+    header {
+      background-color: #388e3c;
+      color: white;
+      padding: 20px;
+      text-align: center;
+      font-size: 1.8em;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .container {
+      padding: 20px;
+      max-width: 480px;
+      margin: auto;
+    }
+    .section {
+      margin-bottom: 20px;
+    }
+    label {
+      display: block;
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+    select, input, button {
+      width: 100%;
+      padding: 12px;
+      margin-top: 5px;
+      border-radius: 10px;
+      border: 1px solid #ccc;
+      font-size: 1em;
+      box-sizing: border-box;
+    }
+    button {
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      margin-top: 10px;
+    }
+    button:disabled {
+      background-color: #9CCC9C;
+    }
+    button:hover {
+      background-color: #43A047;
+    }
+    .result-item {
+      margin-left: 10px;
+    }
+    .highlight {
+      color: #d32f2f;
+      font-weight: bold;
+      font-size: 1.2em;
+      margin-top: 15px;
+    }
+    ul {
+      padding-left: 20px;
+    }
+    .card {
+      background-color: #ffffff;
+      border-radius: 10px;
+      padding: 15px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+  </style>
+</head>
+<body>
+  <header>ตรวจสอบผู้ตรวจ</header>
+  <div class="container">
+    <div class="section card">
+      <label for="inspector">เลือกชื่อผู้ตรวจ:</label>
+      <select id="inspector"></select>
+
+      <label for="shopId">ใส่รหัสร้าน:</label>
+      <input type="text" id="shopId" placeholder="เช่น 1234">
+      <button onclick="checkData()" disabled>กำลังโหลดข้อมูล...</button>
+    </div>
+
+    <div id="result" class="card" style="margin-top: 20px;"></div>
+  </div>
+
+  <script>
+    let data = {};
+    const inspectorSelect = document.getElementById('inspector');
+    const resultDiv = document.getElementById('result');
+    const button = document.querySelector('button');
+
+    fetch('data_inspectors.json')
+      .then(res => res.json())
+      .then(json => {
+        data = json;
+        const names = new Set();
+        for (const entries of Object.values(data)) {
+          entries.forEach(item => names.add(item["ผู้ตรวจ"]));
+        }
+        [...names].sort().forEach(name => {
+          const opt = document.createElement('option');
+          opt.value = name;
+          opt.textContent = name;
+          inspectorSelect.appendChild(opt);
+        });
+
+        button.disabled = false;
+        button.textContent = 'ตรวจสอบ';
+      });
+
+    function checkData() {
+      const selectedName = inspectorSelect.value;
+      const shopId = document.getElementById('shopId').value.trim();
+      const entries = data[shopId];
+
+      resultDiv.innerHTML = '';
+
+      if (!entries) {
+        resultDiv.innerHTML = `<p style='color:red'>ไม่พบข้อมูลรหัสร้านใน data_inspectors.json</p>`;
+        return;
+      }
+
+      let count = 0;
+      const list = document.createElement('ul');
+      entries.forEach(item => {
+        const li = document.createElement('li');
+        li.innerHTML = `📅 ${item["เดือน"]}: <span class="result-item">${item["ผู้ตรวจ"]}</span>`;
+        if (item["ผู้ตรวจ"] === selectedName) {
+          count++;
+          li.querySelector('.result-item').style.color = '#d32f2f';
+          li.querySelector('.result-item').style.fontWeight = 'bold';
+        }
+        list.appendChild(li);
+      });
+
+      resultDiv.appendChild(list);
+
+      if (count > 1) {
+        const warn = document.createElement('div');
+        warn.className = 'highlight';
+        warn.textContent = `⚠️ ชื่อ "${selectedName}" ซ้ำ ${count} เดือน!`;
+        resultDiv.appendChild(warn);
+      }
+    }
+  </script>
+</body>
+</html>
